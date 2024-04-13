@@ -10,8 +10,9 @@ const (
 )
 
 type ConnectFourGame interface {
-	playTurn(int, int) error
-	checkWin() uint8
+	PlayTurn(int) error
+	CheckWin() uint8
+	GetWhoseTurn() uint8
 }
 
 type connectFourGame struct {
@@ -21,7 +22,7 @@ type connectFourGame struct {
 	winningSequenceLength int
 }
 
-func (game *connectFourGame) checkWin() uint8 {
+func (game *connectFourGame) CheckWin() uint8 {
 	checkVertical := func(colour uint8) bool {
 		numRows := len(game.board)
 		numCols := len(game.board[0])
@@ -132,11 +133,21 @@ func MakeConnectFourGame(numColumns int, numRows int, winningSequenceLength int)
 	return &connectFourGame{RED, board, 0, winningSequenceLength}, nil
 }
 
-func (game *connectFourGame) playTurn(row int, col int) error {
+func (game *connectFourGame) PlayTurn(col int) error {
 	numRows := len(game.board)
 	numCols := len(game.board[0])
-	if row >= numRows || col >= numCols {
+	if col >= numCols || col < 0 {
 		return errors.New("index out of bounds")
+	}
+	var row int
+	for i := 0; i < numRows; i++ {
+		if game.board[i][col] != 0 {
+			row = i - 1
+			break
+		}
+	}
+	if row < 0 {
+		return errors.New("column is full already")
 	}
 	if row+1 == numRows || game.board[row+1][col] != 0 {
 		game.board[row][col] = game.turn
@@ -148,4 +159,8 @@ func (game *connectFourGame) playTurn(row int, col int) error {
 		game.numFilledBoxes++
 	}
 	return nil
+}
+
+func (game *connectFourGame) GetWhoseTurn() uint8 {
+	return game.turn
 }
