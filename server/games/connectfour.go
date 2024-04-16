@@ -22,11 +22,19 @@ type connectFourGame struct {
 	winningSequenceLength int
 }
 
-func (game *connectFourGame) CheckWin() uint8 {
-	checkVertical := func(colour uint8) bool {
-		numRows := len(game.board)
-		numCols := len(game.board[0])
+/* TODO: improve struct
+type connectFourGame struct {
+	turn *Player
+	board [][]*Player
+	numFilledBoxes int
+	winningSequenceLength int
+}
+*/
 
+func (game *connectFourGame) CheckWin() uint8 {
+	numRows := len(game.board)
+	numCols := len(game.board[0])
+	checkVertical := func(colour uint8) bool {
 		for j := 0; j < numCols; j++ {
 			count := 0
 			for i := 0; i < numRows; i++ {
@@ -44,9 +52,6 @@ func (game *connectFourGame) CheckWin() uint8 {
 	}
 
 	checkHorizontal := func(colour uint8) bool {
-		numRows := len(game.board)
-		numCols := len(game.board[0])
-
 		for i := 0; i < numRows; i++ {
 			count := 0
 			for j := 0; j < numCols; j++ {
@@ -63,50 +68,121 @@ func (game *connectFourGame) CheckWin() uint8 {
 		return false
 	}
 
-	checkForwardDiagonal := func(colour uint8) bool {
-		numRows := len(game.board)
-		numCols := len(game.board[0])
-
-		for j := game.winningSequenceLength - 1; j < numCols; j++ {
-			i := 0
-			currentJ := j
-			count := 0
-			for i < numRows && currentJ >= 0 {
-				if game.board[i][j] != colour {
-					count = 0
-				} else {
-					count++
-					if count == game.winningSequenceLength {
-						return true
-					}
+	checkForwardDiagonalStartingFrom := func(colour uint8, startingRow int, startingCol int) bool {
+		currentDiagonalI := startingRow
+		currentDiagonalJ := startingCol
+		count := 0
+		for currentDiagonalI < numRows && currentDiagonalJ >= 0 {
+			if game.board[currentDiagonalI][currentDiagonalJ] != colour {
+				count = 0
+			} else {
+				count++
+				if count == game.winningSequenceLength {
+					return true
 				}
-				i++
-				currentJ--
 			}
+			currentDiagonalI++
+			currentDiagonalJ--
 		}
 		return false
 	}
 
-	checkBackwardDiagonal := func(colour uint8) bool {
-		numRows := len(game.board)
-		numCols := len(game.board[0])
-		for j := numCols - game.winningSequenceLength; j >= 0; j-- {
-			i := 0
-			currentJ := j
-			count := 0
-			for i < numRows && currentJ >= 0 {
-				if game.board[i][j] != colour {
-					count = 0
-				} else {
-					count++
-					if count == game.winningSequenceLength {
-						return true
-					}
+	checkBackwardDiagonalStartingFrom := func(colour uint8, startingRow int, startingCol int) bool {
+		currentDiagonalI := startingRow
+		currentDiagonalJ := startingCol
+		count := 0
+		for currentDiagonalI < numRows && currentDiagonalJ < numCols {
+			if game.board[currentDiagonalI][currentDiagonalJ] != colour {
+				count = 0
+			} else {
+				count++
+				if count == game.winningSequenceLength {
+					return true
 				}
-				i++
-				currentJ++
+			}
+			currentDiagonalI++
+			currentDiagonalJ++
+		}
+		return false
+	}
+
+	checkForwardDiagonal := func(colour uint8) bool {
+		/*
+			Covers the case that the winning sequence lies on a diagonal including a slot
+			from the topmost row
+			e.g, for a 3x6 board with a winning sequence length of 2,
+			     these would be the diagonals investigated
+			| - | x | x |
+			| x | x | - |
+			| x | - | - |
+			| - | - | - |
+			| - | - | - |
+			| - | - | - |
+		*/
+		for j := game.winningSequenceLength - 1; j < numCols; j++ {
+			if checkForwardDiagonalStartingFrom(colour, 0, j) {
+				return true
 			}
 		}
+
+		/*
+			Covers the case that the winning sequence lies on a diagonal including a slot
+			from the rightmost column (excluding the first row -- we covered that in previous loop)
+			e.g, for a 3x6 board with a winning sequence length of 2,
+			     these would be the diagonals investigated
+			| - | - | - |
+			| - | - | x |
+			| - | x | x |
+			| x | x | x |
+			| x | x | x |
+			| x | x | - |
+		*/
+		for i := 1; i <= numRows-game.winningSequenceLength; i++ {
+			if checkForwardDiagonalStartingFrom(colour, i, numCols-1) {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	checkBackwardDiagonal := func(colour uint8) bool {
+		/*
+			Covers the case that the winning sequence lies on a diagonal including a slot
+			from the topmost row
+			e.g, for a 3x6 board with a winning sequence length of 2,
+			     these would be the diagonals investigated
+			| x | x | - |
+			| - | x | x |
+			| - | - | x |
+			| - | - | - |
+			| - | - | - |
+			| - | - | - |
+		*/
+		for j := 0; j <= numCols-game.winningSequenceLength; j++ {
+			if checkBackwardDiagonalStartingFrom(colour, 0, j) {
+				return true
+			}
+		}
+
+		/*
+			Covers the case that the winning sequence lies on a diagonal including a slot
+			from the rightmost column (excluding the first row -- we covered that in previous loop)
+			e.g, for a 3x6 board with a winning sequence length of 2,
+			     these would be the diagonals investigated
+			| - | - | - |
+			| x | - | - |
+			| x | x | - |
+			| x | x | x |
+			| x | x | x |
+			| - | x | x |
+		*/
+		for i := 1; i <= numRows-game.winningSequenceLength; i++ {
+			if checkBackwardDiagonalStartingFrom(colour, i, 0) {
+				return true
+			}
+		}
+
 		return false
 	}
 
@@ -139,10 +215,11 @@ func (game *connectFourGame) PlayTurn(col int) error {
 	if col >= numCols || col < 0 {
 		return errors.New("index out of bounds")
 	}
-	var row int
+	row := -1
 	for i := 0; i < numRows; i++ {
-		if game.board[i][col] != 0 {
-			row = i - 1
+		if game.board[i][col] == 0 {
+			row = i
+		} else {
 			break
 		}
 	}

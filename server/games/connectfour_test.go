@@ -17,26 +17,30 @@ func TestMakeWithInvalidSequenceNumber(t *testing.T) {
 }
 
 func TestHorizontalOutOfBounds(t *testing.T) {
-	game, _ := games.MakeConnectFourGame(2, 2, 2)
-	err := game.PlayTurn(3)
+	game, _ := games.MakeConnectFourGame(3, 3, 3)
+	err := game.PlayTurn(4)
 	if err == nil {
 		t.Error("Expected error for out of bounds play")
 	}
 }
 
 func TestColumnAlreadyFull(t *testing.T) {
-	game, _ := games.MakeConnectFourGame(1, 1, 1)
+	game, _ := games.MakeConnectFourGame(3, 3, 3)
 	game.PlayTurn(1)
-	err := game.PlayTurn(2)
+	game.PlayTurn(1)
+	game.PlayTurn(1)
+	err := game.PlayTurn(1)
 	if err == nil {
 		t.Error("Expected error for placement on already-full column")
 	}
 }
 
 func TestVerticalWin(t *testing.T) {
-	game, _ := games.MakeConnectFourGame(2, 2, 2)
+	game, _ := games.MakeConnectFourGame(3, 3, 3)
 	expectedWinningPlayer := game.GetWhoseTurn()
 
+	game.PlayTurn(0)
+	game.PlayTurn(1)
 	game.PlayTurn(0)
 	game.PlayTurn(1)
 	game.PlayTurn(0)
@@ -47,11 +51,26 @@ func TestVerticalWin(t *testing.T) {
 }
 
 func TestHorizontalWin(t *testing.T) {
-	game, _ := games.MakeConnectFourGame(2, 2, 2)
+	game, _ := games.MakeConnectFourGame(3, 3, 3)
 	expectedWinningPlayer := game.GetWhoseTurn()
 
 	game.PlayTurn(0)
 	game.PlayTurn(0)
+	game.PlayTurn(1)
+	game.PlayTurn(1)
+	game.PlayTurn(2)
+	result := game.CheckWin()
+	if result != expectedWinningPlayer {
+		t.Errorf("Expected %d to win", expectedWinningPlayer)
+	}
+}
+
+func TestForwardDiagonalWin(t *testing.T) {
+	game, _ := games.MakeConnectFourGame(3, 3, 2)
+	expectedWinningPlayer := game.GetWhoseTurn()
+
+	game.PlayTurn(0)
+	game.PlayTurn(1)
 	game.PlayTurn(1)
 	result := game.CheckWin()
 	if result != expectedWinningPlayer {
@@ -59,8 +78,49 @@ func TestHorizontalWin(t *testing.T) {
 	}
 }
 
-func TestForwardDiagonalWin(t *testing.T) {}
+func TestBackwardDiagonalWin(t *testing.T) {
+	game, _ := games.MakeConnectFourGame(3, 3, 2)
+	expectedWinningPlayer := game.GetWhoseTurn()
 
-func TestBackDiagonalWin(t *testing.T) {}
+	game.PlayTurn(1)
+	game.PlayTurn(0)
+	game.PlayTurn(0)
+	result := game.CheckWin()
+	if result != expectedWinningPlayer {
+		t.Errorf("Expected %d to win", expectedWinningPlayer)
+	}
+}
 
-func TestDraw(t *testing.T) {}
+func TestDraw(t *testing.T) {
+	game, _ := games.MakeConnectFourGame(4, 4, 3)
+	expectedWinningPlayer := game.GetWhoseTurn()
+
+	// Fill up first row
+	game.PlayTurn(0)
+	game.PlayTurn(1)
+	game.PlayTurn(2)
+	game.PlayTurn(3)
+
+	// Fill up second row
+	game.PlayTurn(0)
+	game.PlayTurn(1)
+	game.PlayTurn(2)
+	game.PlayTurn(3)
+
+	// Fill up third row
+	game.PlayTurn(1)
+	game.PlayTurn(0)
+	game.PlayTurn(3)
+	game.PlayTurn(2)
+
+	// Fill up fourth row
+	game.PlayTurn(1)
+	game.PlayTurn(0)
+	game.PlayTurn(3)
+	game.PlayTurn(2)
+
+	result := game.CheckWin()
+	if result != games.NO_WINNER {
+		t.Errorf("Expected %d to win", expectedWinningPlayer)
+	}
+}
