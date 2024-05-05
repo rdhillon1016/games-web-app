@@ -15,13 +15,15 @@ var upgrader = websocket.Upgrader{
 // 	roomId := c.Param("name")
 // }
 
-func HandleTriviaCreate(c *gin.Context) {
+func HandleTriviaCreate(c *gin.Context, triviaGamesServer *games.TriviaGamesServer) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}
 	player := games.NewPlayer(conn, "testusername", false)
-
+	go player.Write()
+	go player.Read()
+	triviaGamesServer.Create <- player
 }
 
 // func HandleConnectFourJoin(c *gin.Context) {
